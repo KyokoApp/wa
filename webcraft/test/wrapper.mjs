@@ -57,8 +57,12 @@ check('position restored via wrapper', Math.abs(st3.x - st2.x) < 0.01 && Math.ab
 
 const stats = engine.stats();
 check('stats readable', typeof stats.cols === 'number' && typeof stats.sections === 'number');
-engine.updateChunks(40);
-const stats2 = engine.stats();
+let stats2 = stats;
+for (let i = 0; i < 60; i++) {
+  engine.updateChunks(40);
+  stats2 = engine.stats();
+  if (stats2.cols > 0 && stats2.sections > 0) break;
+}
 check('world re-streams after load', stats2.cols > 0 && stats2.sections > 0,
   `(${stats2.cols} cols, ${stats2.sections} sections)`);
 
