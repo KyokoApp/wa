@@ -1,0 +1,3 @@
+# wasm-ld needs host_now (JS import) left undefined at link time
+[target.wasm32-unknown-unknown]
+rustflags = ["-C", "link-arg=--allow-undefined"]

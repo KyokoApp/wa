@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0d1117">
+<title>RustCraft Web — Voxel Sandbox Rust + WebGL2</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="loading" class="overlay">
+  <div class="loader-box">
+    <div class="spinner"></div>
+    <div id="loading-text">Memuat…</div>
+  </div>
+</div>
+
+<!-- ================= TITLE ================= -->
+<div id="screen-title" class="overlay screen">
+  <div class="title-card">
+    <h1 class="logo">Rust<span>Craft</span></h1>
+    <div class="tagline">Voxel sandbox — engine <b>Rust → WebAssembly</b> + renderer <b>WebGL2</b> dengan shader pack</div>
+    <div class="seed-row">
+      <input id="seed-input" type="text" placeholder="Seed dunia (teks atau angka)" spellcheck="false">
+    </div>
+    <button id="btn-play" class="btn primary">▶ Main Dunia Baru</button>
+    <button id="btn-continue" class="btn" style="display:none">⟲ Lanjutkan Dunia</button>
+    <button id="btn-new-world" class="btn">✚ Dunia Baru (Hapus Save)</button>
+    <div class="btn-row">
+      <button id="btn-open-settings" class="btn small">⚙ Pengaturan</button>
+      <button id="btn-open-controls" class="btn small">🎮 Kontrol</button>
+    </div>
+    <div class="credits">
+      Game orisinal terinspirasi Minecraft. Tidak berafiliasi dengan Mojang/Microsoft.<br>
+      Dibangun dengan Rust (WASM), meshing + ambient occlusion, dan shader GLSL.
+    </div>
+  </div>
+</div>
+
+<!-- ================= SETTINGS ================= -->
+<div id="screen-settings" class="overlay screen">
+  <div class="panel">
+    <h2>Pengaturan</h2>
+    <label>Jarak render (render distance)</label>
+    <div class="slider-row">
+      <input id="set-render" type="range" min="2" max="10" step="1">
+      <span id="set-render-val" class="val"></span>
+    </div>
+    <label>Field of view</label>
+    <div class="slider-row">
+      <input id="set-fov" type="range" min="50" max="110" step="1">
+      <span id="set-fov-val" class="val"></span>
+    </div>
+    <label>Sensitivitas mouse</label>
+    <div class="slider-row">
+      <input id="set-sens" type="range" min="5" max="60" step="1">
+      <span id="set-sens-val" class="val"></span>
+    </div>
+    <label>Durasi siang (detik)</label>
+    <div class="slider-row">
+      <input id="set-day" type="range" min="120" max="1200" step="30">
+      <span id="set-day-val" class="val"></span>
+    </div>
+    <label>Kualitas shader</label>
+    <select id="set-shaders">
+      <option value="0">Matematika Murni (Off — performa maksimal)</option>
+      <option value="1">Medium (bloom + waves + fog)</option>
+      <option value="2">Tinggi (bloom kuat + vignette + grading)</option>
+    </select>
+    <label class="check-row"><input id="set-smooth" type="checkbox"> Smooth lighting (ambient occlusion)</label>
+    <button id="btn-settings-back" class="btn primary">Kembali</button>
+  </div>
+</div>
+
+<!-- ================= CONTROLS ================= -->
+<div id="screen-controls" class="overlay screen">
+  <div class="panel">
+    <h2>Kontrol</h2>
+    <div class="controls-grid">
+      <div><b>WASD / Panah</b> — Bergerak</div>
+      <div><b>Mouse</b> — Lihat sekeliling (klik untuk kunci kursor)</div>
+      <div><b>Space</b> — Lompat / Naik saat terbang</div>
+      <div><b>Space 2×</b> / <b>F</b> — Mode terbang (creative)</div>
+      <div><b>Shift</b> — Jongkok / Turun saat terbang</div>
+      <div><b>Ctrl / R</b> — Sprint</div>
+      <div><b>Klik kiri</b> — Hancurkan blok</div>
+      <div><b>Klik kanan</b> — Pasang blok</div>
+      <div><b>1–9 / Scroll</b> — Pilih slot hotbar</div>
+      <div><b>E</b> — Inventaris (semua blok)</div>
+      <div><b>F3</b> — Panel debug</div>
+      <div><b>Esc</b> — Pause</div>
+    </div>
+    <h3>Sentuh (HP / tablet)</h3>
+    <div class="controls-grid">
+      <div><b>Joystick kiri</b> — Bergerak</div>
+      <div><b>Drag kanan</b> — Lihat</div>
+      <div><b>Tap</b> — Pasang blok · <b>Tahan</b> — Hancurkan</div>
+      <div><b>Tombol</b> — Lompat, terbang, sprint, dll.</div>
+    </div>
+    <button id="btn-controls-back" class="btn primary">Kembali</button>
+  </div>
+</div>
+
+<!-- ================= PAUSE ================= -->
+<div id="screen-pause" class="overlay screen">
+  <div class="panel narrow">
+    <h2>Permainan Dijeda</h2>
+    <button id="btn-resume" class="btn primary">▶ Lanjutkan</button>
+    <button id="btn-save" class="btn">💾 Simpan Dunia</button>
+    <button id="btn-settings-pause" class="btn">⚙ Pengaturan</button>
+    <button id="btn-quit" class="btn danger">🏠 Keluar ke Menu</button>
+  </div>
+</div>
+
+<!-- ================= INVENTORY ================= -->
+<div id="inventory" class="overlay screen">
+  <div class="panel">
+    <h2>Pilih Blok</h2>
+    <div id="inv-grid"></div>
+    <button id="btn-close-inv" class="btn primary">Tutup</button>
+  </div>
+</div>
+
+<!-- ================= HUD ================= -->
+<div id="hud" style="display:none">
+  <div id="crosshair"></div>
+  <div id="target-label"></div>
+  <div id="coords"></div>
+  <div id="debug"></div>
+  <div id="hotbar"></div>
+</div>
+<div id="toast"></div>
+
+<!-- ================= TOUCH ================= -->
+<div id="touch" style="display:none">
+  <div id="joystick"><div id="joystick-knob"></div></div>
+  <div class="touch-buttons right">
+    <button id="btn-up" class="tbtn small">▲</button>
+    <button id="btn-down" class="tbtn small">▼</button>
+    <button id="btn-fly" class="tbtn">🕊</button>
+    <button id="btn-jump" class="tbtn big">⤒</button>
+    <button id="btn-sneak" class="tbtn">⇣</button>
+  </div>
+  <div class="touch-buttons actions">
+    <button id="btn-break" class="tbtn">⛏</button>
+    <button id="btn-place" class="tbtn">🧱</button>
+    <button id="btn-inventory" class="tbtn">🎒</button>
+    <button id="btn-debug" class="tbtn">ℹ</button>
+    <button id="btn-pause" class="tbtn">⏸</button>
+  </div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
